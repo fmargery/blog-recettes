@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mes recettes</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Carnet personnel</p>
+        <h1>Mes recettes</h1>
+      </div>
+      <nav class="tabs" aria-label="Navigation principale">
+        <button class="tab is-active" data-view="recipes" type="button">Recettes</button>
+        <button class="tab" data-view="admin" type="button">Admin</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="recipesView" class="view">
+        <div class="toolbar">
+          <label class="search">
+            <span>Rechercher</span>
+            <input id="searchInput" type="search" placeholder="ex: tomate, poulet, dessert">
+          </label>
+          <label class="search">
+            <span>Ingredient</span>
+            <input id="ingredientInput" type="search" placeholder="ex: basilic">
+          </label>
+        </div>
+        <div id="recipeList" class="recipe-list"></div>
+      </section>
+
+      <section id="adminView" class="view is-hidden">
+        <section class="import-panel">
+          <div>
+            <h2>Importer une recette</h2>
+            <p>Colle un lien et le texte trouve sur Instagram, YouTube, Facebook ou un site de cuisine.</p>
+          </div>
+          <label>
+            Lien d'origine
+            <input id="importUrlInput" type="url" placeholder="https://...">
+          </label>
+          <label>
+            Texte a importer
+            <textarea id="importTextInput" rows="6" placeholder="Colle ici le texte de la publication, la description de video ou une recette copiee"></textarea>
+          </label>
+          <button id="importButton" type="button">Importer et reformater</button>
+        </section>
+
+        <form id="recipeForm" class="admin-layout">
+          <section class="panel">
+            <h2>Ajouter une recette</h2>
+            <label>
+              Titre
+              <input id="titleInput" type="text" placeholder="ex: Lasagnes aux legumes" required>
+            </label>
+            <label>
+              Source
+              <input id="sourceInput" type="url" placeholder="https://instagram.com/...">
+            </label>
+            <div class="field-grid">
+              <label>
+                Preparation
+                <input id="prepTimeInput" type="text" placeholder="ex: 15 min">
+              </label>
+              <label>
+                Cuisson
+                <input id="cookTimeInput" type="text" placeholder="ex: 30 min">
+              </label>
+              <label>
+                Portions
+                <input id="servingsInput" type="text" placeholder="ex: 4 personnes">
+              </label>
+              <label>
+                Difficulte
+                <select id="difficultyInput">
+                  <option value="Facile">Facile</option>
+                  <option value="Moyen">Moyen</option>
+                  <option value="Avance">Avance</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Recette brute
+              <textarea id="rawInput" rows="10" placeholder="Colle ici le texte trouve sur Instagram, YouTube ou Facebook"></textarea>
+            </label>
+            <div class="button-row">
+              <button id="rewriteButton" class="secondary" type="button">Reecrire</button>
+              <button id="cancelEditButton" class="secondary is-hidden" type="button">Annuler</button>
+              <button id="submitButton" type="submit">Publier</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Version retravaillee</h2>
+            <label>
+              Description
+              <textarea id="descriptionInput" rows="4"></textarea>
+            </label>
+            <label>
+              Ingredients
+              <textarea id="ingredientsInput" rows="6" placeholder="Un ingredient par ligne"></textarea>
+            </label>
+            <label>
+              Etapes
+              <textarea id="stepsInput" rows="8" placeholder="Une etape par ligne"></textarea>
+            </label>
+            <label>
+              Tags
+              <input id="tagsInput" type="text" placeholder="ex: rapide, diner, italien">
+            </label>
+          </section>
+        </form>
+      </section>
+    </main>
+
+    <template id="recipeTemplate">
+      <article class="recipe-card">
+        <div class="recipe-card__header">
+          <h2></h2>
+          <span class="badge"></span>
+        </div>
+        <p class="description"></p>
+        <div class="meta"></div>
+        <details>
+          <summary>Voir la recette</summary>
+          <h3>Ingredients</h3>
+          <ul class="ingredients"></ul>
+          <h3>Etapes</h3>
+          <ol class="steps"></ol>
+        </details>
+        <div class="card-actions">
+          <button class="secondary edit-button" type="button">Modifier</button>
+          <button class="danger delete-button" type="button">Supprimer</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
