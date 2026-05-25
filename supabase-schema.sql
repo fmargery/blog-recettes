@@ -10,9 +10,12 @@ create table if not exists public.recipes (
   cook_time text,
   servings text,
   difficulty text,
+  category text,
+  status text default 'A tester',
   ingredients text[] not null default '{}',
   steps text[] not null default '{}',
   tags text[] not null default '{}',
+  notes text,
   raw_text text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

@@ -100,6 +100,21 @@
                 </select>
               </label>
             </div>
+            <div class="field-grid">
+              <label>
+                Categorie
+                <input id="categoryInput" type="text" placeholder="ex: Plat principal">
+              </label>
+              <label>
+                Statut
+                <select id="statusInput">
+                  <option value="A tester">A tester</option>
+                  <option value="Testee">Testee</option>
+                  <option value="Validee">Validee</option>
+                  <option value="Favorite">Favorite</option>
+                </select>
+              </label>
+            </div>
             <label>
               Recette brute
               <textarea id="rawInput" rows="10" placeholder="Colle ici le texte trouve sur Instagram, YouTube ou Facebook"></textarea>
@@ -129,6 +144,10 @@
               Tags
               <input id="tagsInput" type="text" placeholder="ex: rapide, diner, italien">
             </label>
+            <label>
+              Notes personnelles
+              <textarea id="notesInput" rows="4" placeholder="Tes ajustements, idees de variantes ou conseils"></textarea>
+            </label>
           </section>
         </form>
       </section>
@@ -148,6 +167,8 @@
           <ul class="ingredients"></ul>
           <h3>Etapes</h3>
           <ol class="steps"></ol>
+          <h3 class="notes-title">Notes</h3>
+          <p class="notes"></p>
         </details>
         <div class="card-actions">
           <button class="secondary edit-button" type="button">Modifier</button>

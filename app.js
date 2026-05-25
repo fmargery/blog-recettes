@@ -5,11 +5,14 @@ const sampleRecipes = [
     description: "Une recette simple pour un soir de semaine, avec une sauce tomate douce et beaucoup de basilic.",
     prepTime: "10 min",
     cookTime: "15 min",
-    servings: "2 personnes",
-    difficulty: "Facile",
-    ingredients: ["250 g de pates", "300 g de tomates", "1 gousse d'ail", "Basilic frais", "Huile d'olive"],
-    steps: ["Cuire les pates.", "Faire revenir l'ail dans l'huile.", "Ajouter les tomates et laisser mijoter.", "Melanger avec les pates et finir avec le basilic."],
-    tags: ["rapide", "vegetarien", "italien"]
+  servings: "2 personnes",
+  difficulty: "Facile",
+  category: "Plat principal",
+  status: "A tester",
+  ingredients: ["250 g de pates", "300 g de tomates", "1 gousse d'ail", "Basilic frais", "Huile d'olive"],
+  steps: ["Cuire les pates.", "Faire revenir l'ail dans l'huile.", "Ajouter les tomates et laisser mijoter.", "Melanger avec les pates et finir avec le basilic."],
+    tags: ["rapide", "vegetarien", "italien"],
+    notes: "Ajouter un peu d'eau de cuisson pour lier la sauce."
   }
 ];
 
@@ -48,11 +51,14 @@ const fields = {
   cookTime: document.querySelector("#cookTimeInput"),
   servings: document.querySelector("#servingsInput"),
   difficulty: document.querySelector("#difficultyInput"),
+  category: document.querySelector("#categoryInput"),
+  status: document.querySelector("#statusInput"),
   raw: document.querySelector("#rawInput"),
   description: document.querySelector("#descriptionInput"),
   ingredients: document.querySelector("#ingredientsInput"),
   steps: document.querySelector("#stepsInput"),
-  tags: document.querySelector("#tagsInput")
+  tags: document.querySelector("#tagsInput"),
+  notes: document.querySelector("#notesInput")
 };
 
 function loadLocalRecipes() {
@@ -118,9 +124,12 @@ function fromSupabase(row) {
     cookTime: row.cook_time || "",
     servings: row.servings || "",
     difficulty: row.difficulty || "Facile",
+    category: row.category || "",
+    status: row.status || "A tester",
     ingredients: row.ingredients || [],
     steps: row.steps || [],
     tags: row.tags || [],
+    notes: row.notes || "",
     raw: row.raw_text || ""
   };
 }
@@ -135,9 +144,12 @@ function toSupabase(recipe) {
     cook_time: recipe.cookTime,
     servings: recipe.servings,
     difficulty: recipe.difficulty,
+    category: recipe.category,
+    status: recipe.status,
     ingredients: recipe.ingredients,
     steps: recipe.steps,
     tags: recipe.tags,
+    notes: recipe.notes,
     raw_text: recipe.raw || "",
     updated_at: new Date().toISOString()
   };
@@ -243,6 +255,8 @@ async function renderRecipes() {
       recipe.title,
       recipe.description,
       recipe.difficulty || "",
+      recipe.category || "",
+      recipe.status || "",
       recipe.tags.join(" "),
       recipe.ingredients.join(" ")
     ].join(" ").toLowerCase();
@@ -270,6 +284,8 @@ async function renderRecipes() {
       recipe.cookTime ? `Cuisson: ${recipe.cookTime}` : "",
       recipe.servings || "",
       recipe.difficulty || "",
+      recipe.category || "",
+      recipe.status || "",
       ...recipe.tags
     ].filter(Boolean).forEach((tag) => {
       const item = document.createElement("span");
@@ -290,6 +306,12 @@ async function renderRecipes() {
       item.textContent = step;
       steps.append(item);
     });
+
+    const notesTitle = card.querySelector(".notes-title");
+    const notes = card.querySelector(".notes");
+    notes.textContent = recipe.notes || "";
+    notesTitle.classList.toggle("is-hidden", !recipe.notes);
+    notes.classList.toggle("is-hidden", !recipe.notes);
 
     const editButton = card.querySelector(".edit-button");
     const deleteButton = card.querySelector(".delete-button");
@@ -319,10 +341,13 @@ function editRecipe(index) {
   fields.cookTime.value = recipe.cookTime || "";
   fields.servings.value = recipe.servings || "";
   fields.difficulty.value = recipe.difficulty || "Facile";
+  fields.category.value = recipe.category || "";
+  fields.status.value = recipe.status || "A tester";
   fields.description.value = recipe.description || "";
   fields.ingredients.value = recipe.ingredients.join("\n");
   fields.steps.value = recipe.steps.join("\n");
   fields.tags.value = recipe.tags.join(", ");
+  fields.notes.value = recipe.notes || "";
   fields.raw.value = recipe.raw || "";
 
   submitButton.textContent = "Enregistrer";
@@ -350,7 +375,24 @@ async function deleteRecipe(index) {
   await renderRecipes();
 }
 
-function importRecipeDraft() {
+function fillRecipeForm(draft, rawText, sourceUrl) {
+  fields.title.value = draft.title || "Nouvelle recette importee";
+  fields.source.value = sourceUrl || "";
+  fields.description.value = draft.description || "";
+  fields.ingredients.value = (draft.ingredients || []).join("\n");
+  fields.steps.value = (draft.steps || []).join("\n");
+  fields.tags.value = (draft.tags || []).join(", ");
+  fields.prepTime.value = draft.prepTime || "A completer";
+  fields.cookTime.value = draft.cookTime || "A completer";
+  fields.servings.value = draft.servings || "A completer";
+  fields.difficulty.value = draft.difficulty || "Facile";
+  fields.category.value = draft.category || "A classer";
+  fields.status.value = draft.status || "A tester";
+  fields.notes.value = draft.notes || "";
+  fields.raw.value = rawText || "";
+}
+
+async function importRecipeDraft() {
   const text = importTextInput.value.trim();
 
   if (!text) {
@@ -358,19 +400,32 @@ function importRecipeDraft() {
     return;
   }
 
-  const draft = buildImportedRecipe(text);
   resetForm();
-  fields.title.value = draft.title;
-  fields.source.value = importUrlInput.value.trim();
-  fields.description.value = draft.description;
-  fields.ingredients.value = draft.ingredients.join("\n");
-  fields.steps.value = draft.steps.join("\n");
-  fields.tags.value = draft.tags.join(", ");
-  fields.prepTime.value = "A completer";
-  fields.cookTime.value = "A completer";
-  fields.servings.value = "A completer";
-  fields.difficulty.value = "Facile";
-  fields.raw.value = text;
+  importButton.disabled = true;
+  importButton.textContent = "Reecriture IA...";
+
+  if (hasSupabaseConfig) {
+    const { data, error } = await supabaseClient.functions.invoke("rewrite-recipe", {
+      body: {
+        rawText: text,
+        sourceUrl: importUrlInput.value.trim()
+      }
+    });
+
+    if (!error && data) {
+      fillRecipeForm(data, text, importUrlInput.value.trim());
+      importButton.disabled = false;
+      importButton.textContent = "Importer et reformater";
+      return;
+    }
+
+    authStatus.textContent = `IA indisponible, import local utilise: ${error?.message || "fonction non configuree"}`;
+  }
+
+  const draft = buildImportedRecipe(text);
+  fillRecipeForm(draft, text, importUrlInput.value.trim());
+  importButton.disabled = false;
+  importButton.textContent = "Importer et reformater";
 }
 
 function rewriteDraft() {
@@ -401,6 +456,10 @@ function rewriteDraft() {
 
   if (!fields.servings.value.trim()) {
     fields.servings.value = "A completer";
+  }
+
+  if (!fields.category.value.trim()) {
+    fields.category.value = "A classer";
   }
 }
 
@@ -464,10 +523,13 @@ form.addEventListener("submit", async (event) => {
     cookTime: fields.cookTime.value.trim(),
     servings: fields.servings.value.trim(),
     difficulty: fields.difficulty.value,
+    category: fields.category.value.trim(),
+    status: fields.status.value,
     description: fields.description.value.trim(),
     ingredients: splitLines(fields.ingredients.value),
     steps: splitLines(fields.steps.value),
     tags: fields.tags.value.split(",").map((tag) => tag.trim()).filter(Boolean),
+    notes: fields.notes.value.trim(),
     raw: fields.raw.value.trim()
   };
 

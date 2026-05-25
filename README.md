@@ -50,3 +50,16 @@ Pour eviter le blocage de connexion email pendant les tests, le site peut foncti
 Executer `supabase-open-admin.sql` dans le SQL Editor Supabase pour autoriser temporairement l'ajout, la modification et la suppression sans connexion.
 
 Attention: toute personne qui connait l'URL du site pourra modifier les recettes. Cette configuration est pratique pour tester, mais elle devra etre remplacee par une vraie gestion des droits.
+
+## Activer la reecriture IA
+
+Le site appelle une Supabase Edge Function nommee `rewrite-recipe`.
+
+1. Dans Supabase, executer `supabase-ai-schema-update.sql` dans le SQL Editor.
+2. Creer une Edge Function `rewrite-recipe`.
+3. Copier le contenu de `supabase/functions/rewrite-recipe/index.ts` dans cette fonction.
+4. Ajouter un secret Supabase nomme `OPENAI_API_KEY` avec ta cle API OpenAI.
+5. Deployer la fonction.
+6. Republier `index.html`, `app.js`, `styles.css` et `supabase-config.js` sur GitHub.
+
+La cle OpenAI doit rester dans Supabase. Ne jamais la mettre dans GitHub Pages, `app.js` ou `supabase-config.js`.
