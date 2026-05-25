@@ -28,3 +28,17 @@ Double-cliquer sur `index.html`.
 
 Les recettes sont enregistrees dans le navigateur avec `localStorage`.
 Pour synchroniser les recettes entre plusieurs appareils, il faudra ajouter une base de donnees.
+
+## Activer Supabase
+
+1. Creer un projet sur Supabase.
+2. Ouvrir le SQL Editor.
+3. Copier le contenu de `supabase-schema.sql`.
+4. Executer le script SQL.
+5. Dans `Project Settings` > `API`, copier:
+   - Project URL
+   - anon public key
+6. Coller ces valeurs dans `supabase-config.js`.
+7. Republier les fichiers sur GitHub.
+
+Tant que `supabase-config.js` est vide, le site continue de fonctionner en mode local.

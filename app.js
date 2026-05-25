@@ -14,6 +14,10 @@ const sampleRecipes = [
 ];
 
 const storageKey = "personal-recipes";
+const config = window.RECIPES_SUPABASE || {};
+const hasSupabaseConfig = Boolean(config.url && config.anonKey && window.supabase);
+const supabaseClient = hasSupabaseConfig ? window.supabase.createClient(config.url, config.anonKey) : null;
+
 const tabs = document.querySelectorAll(".tab");
 const recipesView = document.querySelector("#recipesView");
 const adminView = document.querySelector("#adminView");
@@ -28,7 +32,14 @@ const submitButton = document.querySelector("#submitButton");
 const importButton = document.querySelector("#importButton");
 const importUrlInput = document.querySelector("#importUrlInput");
 const importTextInput = document.querySelector("#importTextInput");
-let editingIndex = null;
+const emailInput = document.querySelector("#emailInput");
+const loginButton = document.querySelector("#loginButton");
+const logoutButton = document.querySelector("#logoutButton");
+const authStatus = document.querySelector("#authStatus");
+
+let editingId = null;
+let currentRecipes = [];
+let currentUser = null;
 
 const fields = {
   title: document.querySelector("#titleInput"),
@@ -44,12 +55,12 @@ const fields = {
   tags: document.querySelector("#tagsInput")
 };
 
-function loadRecipes() {
+function loadLocalRecipes() {
   const saved = localStorage.getItem(storageKey);
   return saved ? JSON.parse(saved) : sampleRecipes;
 }
 
-function saveRecipes(recipes) {
+function saveLocalRecipes(recipes) {
   localStorage.setItem(storageKey, JSON.stringify(recipes));
 }
 
@@ -97,33 +108,142 @@ function buildImportedRecipe(text) {
   };
 }
 
-function importRecipeDraft() {
-  const text = importTextInput.value.trim();
+function fromSupabase(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    source: row.source || "",
+    description: row.description || "",
+    prepTime: row.prep_time || "",
+    cookTime: row.cook_time || "",
+    servings: row.servings || "",
+    difficulty: row.difficulty || "Facile",
+    ingredients: row.ingredients || [],
+    steps: row.steps || [],
+    tags: row.tags || [],
+    raw: row.raw_text || ""
+  };
+}
 
-  if (!text) {
-    importTextInput.focus();
+function toSupabase(recipe) {
+  return {
+    owner_id: currentUser.id,
+    title: recipe.title,
+    source: recipe.source,
+    description: recipe.description,
+    prep_time: recipe.prepTime,
+    cook_time: recipe.cookTime,
+    servings: recipe.servings,
+    difficulty: recipe.difficulty,
+    ingredients: recipe.ingredients,
+    steps: recipe.steps,
+    tags: recipe.tags,
+    raw_text: recipe.raw || "",
+    updated_at: new Date().toISOString()
+  };
+}
+
+function canEdit() {
+  return !hasSupabaseConfig || Boolean(currentUser);
+}
+
+function setAdminEnabled(enabled) {
+  form.querySelectorAll("input, textarea, select, button").forEach((element) => {
+    element.disabled = !enabled;
+  });
+  importButton.disabled = !enabled;
+  importUrlInput.disabled = !enabled;
+  importTextInput.disabled = !enabled;
+}
+
+async function refreshAuth() {
+  if (!hasSupabaseConfig) {
+    authStatus.textContent = "Mode local: les recettes restent dans ce navigateur.";
+    loginButton.disabled = true;
+    emailInput.disabled = true;
+    logoutButton.classList.add("is-hidden");
+    setAdminEnabled(true);
     return;
   }
 
-  const draft = buildImportedRecipe(text);
-  resetForm();
-  fields.title.value = draft.title;
-  fields.source.value = importUrlInput.value.trim();
-  fields.description.value = draft.description;
-  fields.ingredients.value = draft.ingredients.join("\n");
-  fields.steps.value = draft.steps.join("\n");
-  fields.tags.value = draft.tags.join(", ");
-  fields.prepTime.value = "A completer";
-  fields.cookTime.value = "A completer";
-  fields.servings.value = "A completer";
-  fields.difficulty.value = "Facile";
-  fields.raw.value = text;
+  const { data } = await supabaseClient.auth.getUser();
+  currentUser = data.user;
+
+  if (currentUser) {
+    authStatus.textContent = `Connecte: ${currentUser.email}`;
+    loginButton.classList.add("is-hidden");
+    logoutButton.classList.remove("is-hidden");
+    emailInput.disabled = true;
+    setAdminEnabled(true);
+  } else {
+    authStatus.textContent = "Connecte-toi pour ajouter, modifier ou supprimer des recettes.";
+    loginButton.classList.remove("is-hidden");
+    logoutButton.classList.add("is-hidden");
+    emailInput.disabled = false;
+    setAdminEnabled(false);
+  }
 }
 
-function renderRecipes() {
+async function loadRecipes() {
+  if (!hasSupabaseConfig) {
+    currentRecipes = loadLocalRecipes();
+    return currentRecipes;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("recipes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    recipeList.innerHTML = `<p class="description">Erreur Supabase: ${error.message}</p>`;
+    currentRecipes = [];
+    return currentRecipes;
+  }
+
+  currentRecipes = data.map(fromSupabase);
+  return currentRecipes;
+}
+
+async function saveRecipe(recipe) {
+  if (!hasSupabaseConfig) {
+    const recipes = loadLocalRecipes();
+
+    if (editingId === null) {
+      recipes.unshift(recipe);
+    } else {
+      recipes[editingId] = recipe;
+    }
+
+    saveLocalRecipes(recipes);
+    return;
+  }
+
+  if (!currentUser) {
+    authStatus.textContent = "Connecte-toi avant de publier.";
+    return;
+  }
+
+  const payload = toSupabase(recipe);
+
+  if (editingId === null) {
+    const { error } = await supabaseClient.from("recipes").insert(payload);
+    if (error) {
+      authStatus.textContent = `Erreur publication: ${error.message}`;
+    }
+  } else {
+    const { error } = await supabaseClient.from("recipes").update(payload).eq("id", editingId);
+    if (error) {
+      authStatus.textContent = `Erreur modification: ${error.message}`;
+    }
+  }
+}
+
+async function renderRecipes() {
   const query = searchInput.value.trim().toLowerCase();
   const ingredientQuery = ingredientInput.value.trim().toLowerCase();
-  const recipes = loadRecipes().map((recipe, index) => ({ recipe, index })).filter(({ recipe }) => {
+  const loadedRecipes = await loadRecipes();
+  const recipes = loadedRecipes.map((recipe, index) => ({ recipe, index })).filter(({ recipe }) => {
     const haystack = [
       recipe.title,
       recipe.description,
@@ -176,24 +296,27 @@ function renderRecipes() {
       steps.append(item);
     });
 
-    card.querySelector(".edit-button").addEventListener("click", () => editRecipe(index));
-    card.querySelector(".delete-button").addEventListener("click", () => deleteRecipe(index));
+    const editButton = card.querySelector(".edit-button");
+    const deleteButton = card.querySelector(".delete-button");
+    editButton.disabled = !canEdit();
+    deleteButton.disabled = !canEdit();
+    editButton.addEventListener("click", () => editRecipe(index));
+    deleteButton.addEventListener("click", () => deleteRecipe(index));
 
     recipeList.append(card);
   });
 }
 
 function resetForm() {
-  editingIndex = null;
+  editingId = null;
   form.reset();
   submitButton.textContent = "Publier";
   cancelEditButton.classList.add("is-hidden");
 }
 
 function editRecipe(index) {
-  const recipes = loadRecipes();
-  const recipe = recipes[index];
-  editingIndex = index;
+  const recipe = currentRecipes[index];
+  editingId = hasSupabaseConfig ? recipe.id : index;
 
   fields.title.value = recipe.title || "";
   fields.source.value = recipe.source || "";
@@ -205,18 +328,54 @@ function editRecipe(index) {
   fields.ingredients.value = recipe.ingredients.join("\n");
   fields.steps.value = recipe.steps.join("\n");
   fields.tags.value = recipe.tags.join(", ");
-  fields.raw.value = "";
+  fields.raw.value = recipe.raw || "";
 
   submitButton.textContent = "Enregistrer";
   cancelEditButton.classList.remove("is-hidden");
   document.querySelector('[data-view="admin"]').click();
 }
 
-function deleteRecipe(index) {
-  const recipes = loadRecipes();
-  recipes.splice(index, 1);
-  saveRecipes(recipes);
-  renderRecipes();
+async function deleteRecipe(index) {
+  if (!hasSupabaseConfig) {
+    const recipes = loadLocalRecipes();
+    recipes.splice(index, 1);
+    saveLocalRecipes(recipes);
+    await renderRecipes();
+    return;
+  }
+
+  const recipe = currentRecipes[index];
+  const { error } = await supabaseClient.from("recipes").delete().eq("id", recipe.id);
+
+  if (error) {
+    authStatus.textContent = `Erreur suppression: ${error.message}`;
+    return;
+  }
+
+  await renderRecipes();
+}
+
+function importRecipeDraft() {
+  const text = importTextInput.value.trim();
+
+  if (!text) {
+    importTextInput.focus();
+    return;
+  }
+
+  const draft = buildImportedRecipe(text);
+  resetForm();
+  fields.title.value = draft.title;
+  fields.source.value = importUrlInput.value.trim();
+  fields.description.value = draft.description;
+  fields.ingredients.value = draft.ingredients.join("\n");
+  fields.steps.value = draft.steps.join("\n");
+  fields.tags.value = draft.tags.join(", ");
+  fields.prepTime.value = "A completer";
+  fields.cookTime.value = "A completer";
+  fields.servings.value = "A completer";
+  fields.difficulty.value = "Facile";
+  fields.raw.value = text;
 }
 
 function rewriteDraft() {
@@ -250,6 +409,39 @@ function rewriteDraft() {
   }
 }
 
+async function sendLoginLink() {
+  if (!hasSupabaseConfig) {
+    return;
+  }
+
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    emailInput.focus();
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: window.location.href
+    }
+  });
+
+  authStatus.textContent = error ? `Erreur connexion: ${error.message}` : "Regarde ta boite mail: Supabase vient d'envoyer un lien de connexion.";
+}
+
+async function logout() {
+  if (!hasSupabaseConfig) {
+    return;
+  }
+
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  await refreshAuth();
+  await renderRecipes();
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     tabs.forEach((item) => item.classList.remove("is-active"));
@@ -264,10 +456,12 @@ ingredientInput.addEventListener("input", renderRecipes);
 rewriteButton.addEventListener("click", rewriteDraft);
 cancelEditButton.addEventListener("click", resetForm);
 importButton.addEventListener("click", importRecipeDraft);
+loginButton.addEventListener("click", sendLoginLink);
+logoutButton.addEventListener("click", logout);
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const recipes = loadRecipes();
+
   const recipe = {
     title: fields.title.value.trim(),
     source: fields.source.value.trim(),
@@ -278,19 +472,23 @@ form.addEventListener("submit", (event) => {
     description: fields.description.value.trim(),
     ingredients: splitLines(fields.ingredients.value),
     steps: splitLines(fields.steps.value),
-    tags: fields.tags.value.split(",").map((tag) => tag.trim()).filter(Boolean)
+    tags: fields.tags.value.split(",").map((tag) => tag.trim()).filter(Boolean),
+    raw: fields.raw.value.trim()
   };
 
-  if (editingIndex === null) {
-    recipes.unshift(recipe);
-  } else {
-    recipes[editingIndex] = recipe;
-  }
-
-  saveRecipes(recipes);
+  await saveRecipe(recipe);
   resetForm();
   document.querySelector('[data-view="recipes"]').click();
-  renderRecipes();
+  await renderRecipes();
 });
 
+if (hasSupabaseConfig) {
+  supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+    currentUser = session ? session.user : null;
+    await refreshAuth();
+    await renderRecipes();
+  });
+}
+
+refreshAuth();
 renderRecipes();

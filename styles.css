@@ -159,7 +159,8 @@ textarea {
 
 .recipe-card,
 .panel,
-.import-panel {
+.import-panel,
+.auth-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -213,19 +214,29 @@ summary {
 }
 
 .panel,
-.import-panel {
+.import-panel,
+.auth-panel {
   display: grid;
   align-content: start;
   gap: 14px;
 }
 
-.import-panel {
+.import-panel,
+.auth-panel {
   margin-bottom: 18px;
 }
 
-.import-panel p {
+.import-panel p,
+.auth-panel p {
   color: var(--muted);
   margin-bottom: 0;
+}
+
+.auth-row {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
 }
 
 .field-grid {
@@ -242,6 +253,7 @@ summary {
 
   .toolbar,
   .admin-layout,
+  .auth-row,
   .field-grid {
     grid-template-columns: 1fr;
   }

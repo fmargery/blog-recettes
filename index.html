@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mes recettes</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
   </head>
   <body>
     <header class="site-header">
@@ -34,6 +36,21 @@
       </section>
 
       <section id="adminView" class="view is-hidden">
+        <section class="auth-panel">
+          <div>
+            <h2>Connexion admin</h2>
+            <p id="authStatus">Mode local: les recettes restent dans ce navigateur.</p>
+          </div>
+          <div class="auth-row">
+            <label>
+              Email
+              <input id="emailInput" type="email" placeholder="ton-email@example.com">
+            </label>
+            <button id="loginButton" type="button">Recevoir le lien</button>
+            <button id="logoutButton" class="secondary is-hidden" type="button">Deconnexion</button>
+          </div>
+        </section>
+
         <section class="import-panel">
           <div>
             <h2>Importer une recette</h2>
