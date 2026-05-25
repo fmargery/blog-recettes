@@ -5,6 +5,7 @@ create table if not exists public.recipes (
   owner_id uuid references auth.users(id) on delete cascade,
   title text not null,
   source text,
+  image_url text,
   description text,
   prep_time text,
   cook_time text,

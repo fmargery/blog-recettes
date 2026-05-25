@@ -191,6 +191,28 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
+.featured {
+  margin-bottom: 22px;
+}
+
+.featured .recipe-card {
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+  padding: 0;
+}
+
+.featured .recipe-image {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 260px;
+}
+
+.featured .recipe-card__body {
+  padding: 20px;
+}
+
 .recipe-card,
 .panel,
 .import-panel,
@@ -203,6 +225,27 @@ textarea {
 
 .recipe-card {
   border-top: 4px solid var(--accent);
+  overflow: hidden;
+  padding: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.recipe-card:hover {
+  box-shadow: 0 14px 30px rgba(38, 48, 39, 0.12);
+  transform: translateY(-2px);
+}
+
+.recipe-image {
+  aspect-ratio: 16 / 9;
+  background:
+    linear-gradient(135deg, rgba(95, 140, 107, 0.86), rgba(201, 80, 63, 0.74)),
+    radial-gradient(circle at 20% 20%, rgba(255, 250, 240, 0.55), transparent 30%);
+  background-position: center;
+  background-size: cover;
+}
+
+.recipe-card__body {
+  padding: 18px;
 }
 
 .recipe-card__header {
@@ -380,6 +423,10 @@ summary {
 
   .tab {
     flex: 1;
+  }
+
+  .featured .recipe-card {
+    grid-template-columns: 1fr;
   }
 
   .toolbar,

@@ -2,6 +2,7 @@ const sampleRecipes = [
   {
     title: "Pates tomates et basilic",
     source: "",
+    imageUrl: "",
     description: "Une recette simple pour un soir de semaine, avec une sauce tomate douce et beaucoup de basilic.",
     prepTime: "10 min",
     cookTime: "15 min",
@@ -32,6 +33,7 @@ const tabs = document.querySelectorAll(".tab");
 const recipesView = document.querySelector("#recipesView");
 const adminView = document.querySelector("#adminView");
 const recipeList = document.querySelector("#recipeList");
+const featuredRecipe = document.querySelector("#featuredRecipe");
 const template = document.querySelector("#recipeTemplate");
 const searchInput = document.querySelector("#searchInput");
 const ingredientInput = document.querySelector("#ingredientInput");
@@ -57,6 +59,7 @@ let draftNutrition = null;
 const fields = {
   title: document.querySelector("#titleInput"),
   source: document.querySelector("#sourceInput"),
+  imageUrl: document.querySelector("#imageInput"),
   prepTime: document.querySelector("#prepTimeInput"),
   cookTime: document.querySelector("#cookTimeInput"),
   servings: document.querySelector("#servingsInput"),
@@ -129,6 +132,7 @@ function fromSupabase(row) {
     id: row.id,
     title: row.title,
     source: row.source || "",
+    imageUrl: row.image_url || "",
     description: row.description || "",
     prepTime: row.prep_time || "",
     cookTime: row.cook_time || "",
@@ -156,6 +160,7 @@ function toSupabase(recipe) {
     owner_id: currentUser ? currentUser.id : null,
     title: recipe.title,
     source: recipe.source,
+    image_url: recipe.imageUrl,
     description: recipe.description,
     prep_time: recipe.prepTime,
     cook_time: recipe.cookTime,
@@ -200,6 +205,45 @@ function isHighProtein(recipe) {
   return Number(recipe.nutrition?.protein || 0) >= 25
     || recipe.tags.some((tag) => tag.toLowerCase().includes("proteine"))
     || recipe.category?.toLowerCase().includes("sport");
+}
+
+function imageGradient(recipe) {
+  const text = `${recipe.title} ${recipe.category} ${recipe.tags.join(" ")}`.toLowerCase();
+
+  if (text.includes("dessert") || text.includes("fruit")) {
+    return "linear-gradient(135deg, rgba(201, 80, 63, 0.84), rgba(211, 155, 58, 0.72))";
+  }
+
+  if (isVegetarian(recipe) || text.includes("potager")) {
+    return "linear-gradient(135deg, rgba(95, 140, 107, 0.9), rgba(214, 197, 140, 0.75))";
+  }
+
+  if (isHighProtein(recipe) || text.includes("sport")) {
+    return "linear-gradient(135deg, rgba(38, 48, 39, 0.88), rgba(95, 140, 107, 0.75))";
+  }
+
+  return "linear-gradient(135deg, rgba(95, 140, 107, 0.86), rgba(201, 80, 63, 0.74))";
+}
+
+function decorateCard(card, recipe) {
+  const article = card.querySelector(".recipe-card");
+  const image = card.querySelector(".recipe-image");
+  const body = document.createElement("div");
+  body.className = "recipe-card__body";
+
+  Array.from(article.children).forEach((child) => {
+    if (!child.classList.contains("recipe-image")) {
+      body.append(child);
+    }
+  });
+
+  article.append(body);
+
+  if (recipe.imageUrl) {
+    image.style.backgroundImage = `url("${recipe.imageUrl}")`;
+  } else {
+    image.style.backgroundImage = imageGradient(recipe);
+  }
 }
 
 function setAdminEnabled(enabled) {
@@ -312,14 +356,22 @@ async function renderRecipes() {
   });
 
   recipeList.innerHTML = "";
+  featuredRecipe.innerHTML = "";
 
   if (recipes.length === 0) {
     recipeList.innerHTML = '<p class="description">Aucune recette ne correspond a ta recherche.</p>';
     return;
   }
 
-  recipes.forEach(({ recipe, index }) => {
+  const [featured, ...rest] = recipes;
+
+  renderRecipeCard(featured.recipe, featured.index, featuredRecipe);
+  rest.forEach(({ recipe, index }) => renderRecipeCard(recipe, index, recipeList));
+}
+
+function renderRecipeCard(recipe, index, target) {
     const card = template.content.cloneNode(true);
+    decorateCard(card, recipe);
     card.querySelector(".card-kicker").textContent = recipe.category || "Cuisine du quotidien";
     card.querySelector("h2").textContent = recipe.title;
     card.querySelector(".badge").textContent = isHighProtein(recipe) ? "Proteines" : isVegetarian(recipe) ? "Vege" : recipe.status || "Recette";
@@ -380,8 +432,7 @@ async function renderRecipes() {
     editButton.addEventListener("click", () => editRecipe(index));
     deleteButton.addEventListener("click", () => deleteRecipe(index));
 
-    recipeList.append(card);
-  });
+    target.append(card);
 }
 
 function resetForm() {
@@ -398,6 +449,7 @@ function editRecipe(index) {
 
   fields.title.value = recipe.title || "";
   fields.source.value = recipe.source || "";
+  fields.imageUrl.value = recipe.imageUrl || "";
   fields.prepTime.value = recipe.prepTime || "";
   fields.cookTime.value = recipe.cookTime || "";
   fields.servings.value = recipe.servings || "";
@@ -440,6 +492,7 @@ async function deleteRecipe(index) {
 function fillRecipeForm(draft, rawText, sourceUrl) {
   fields.title.value = draft.title || "Nouvelle recette importee";
   fields.source.value = sourceUrl || "";
+  fields.imageUrl.value = draft.imageUrl || "";
   fields.description.value = draft.description || "";
   fields.ingredients.value = (draft.ingredients || []).join("\n");
   fields.steps.value = (draft.steps || []).join("\n");
@@ -590,6 +643,7 @@ form.addEventListener("submit", async (event) => {
   const recipe = {
     title: fields.title.value.trim(),
     source: fields.source.value.trim(),
+    imageUrl: fields.imageUrl.value.trim(),
     prepTime: fields.prepTime.value.trim(),
     cookTime: fields.cookTime.value.trim(),
     servings: fields.servings.value.trim(),

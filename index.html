@@ -42,6 +42,7 @@
           <button class="filter-chip" data-filter="potager" type="button">Potager</button>
           <button class="filter-chip" data-filter="A tester" type="button">A tester</button>
         </div>
+        <section id="featuredRecipe" class="featured"></section>
         <div id="recipeList" class="recipe-list"></div>
       </section>
 
@@ -87,6 +88,10 @@
             <label>
               Source
               <input id="sourceInput" type="url" placeholder="https://instagram.com/...">
+            </label>
+            <label>
+              Image
+              <input id="imageInput" type="url" placeholder="https://...">
             </label>
             <div class="field-grid">
               <label>
@@ -165,6 +170,7 @@
 
     <template id="recipeTemplate">
       <article class="recipe-card">
+        <div class="recipe-image"></div>
         <div class="recipe-card__header">
           <div>
             <p class="card-kicker"></p>

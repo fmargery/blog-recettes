@@ -2,6 +2,7 @@ alter table public.recipes
 add column if not exists category text,
 add column if not exists status text default 'A tester',
 add column if not exists notes text,
+add column if not exists image_url text,
 add column if not exists protein numeric,
 add column if not exists carbs numeric,
 add column if not exists fat numeric,
