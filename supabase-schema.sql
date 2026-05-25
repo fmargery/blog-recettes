@@ -16,6 +16,11 @@ create table if not exists public.recipes (
   steps text[] not null default '{}',
   tags text[] not null default '{}',
   notes text,
+  protein numeric,
+  carbs numeric,
+  fat numeric,
+  fiber numeric,
+  nutrition_summary text,
   raw_text text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
