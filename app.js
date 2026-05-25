@@ -127,7 +127,7 @@ function fromSupabase(row) {
 
 function toSupabase(recipe) {
   return {
-    owner_id: currentUser.id,
+    owner_id: currentUser ? currentUser.id : null,
     title: recipe.title,
     source: recipe.source,
     description: recipe.description,
@@ -144,7 +144,7 @@ function toSupabase(recipe) {
 }
 
 function canEdit() {
-  return !hasSupabaseConfig || Boolean(currentUser);
+  return true;
 }
 
 function setAdminEnabled(enabled) {
@@ -176,11 +176,11 @@ async function refreshAuth() {
     emailInput.disabled = true;
     setAdminEnabled(true);
   } else {
-    authStatus.textContent = "Connecte-toi pour ajouter, modifier ou supprimer des recettes.";
-    loginButton.classList.remove("is-hidden");
+    authStatus.textContent = "Admin temporaire ouvert: aucune connexion requise.";
+    loginButton.classList.add("is-hidden");
     logoutButton.classList.add("is-hidden");
-    emailInput.disabled = false;
-    setAdminEnabled(false);
+    emailInput.disabled = true;
+    setAdminEnabled(true);
   }
 }
 
@@ -216,11 +216,6 @@ async function saveRecipe(recipe) {
     }
 
     saveLocalRecipes(recipes);
-    return;
-  }
-
-  if (!currentUser) {
-    authStatus.textContent = "Connecte-toi avant de publier.";
     return;
   }
 

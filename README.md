@@ -42,3 +42,11 @@ Pour synchroniser les recettes entre plusieurs appareils, il faudra ajouter une 
 7. Republier les fichiers sur GitHub.
 
 Tant que `supabase-config.js` est vide, le site continue de fonctionner en mode local.
+
+## Admin temporaire sans connexion
+
+Pour eviter le blocage de connexion email pendant les tests, le site peut fonctionner avec un admin ouvert.
+
+Executer `supabase-open-admin.sql` dans le SQL Editor Supabase pour autoriser temporairement l'ajout, la modification et la suppression sans connexion.
+
+Attention: toute personne qui connait l'URL du site pourra modifier les recettes. Cette configuration est pratique pour tester, mais elle devra etre remplacee par une vraie gestion des droits.
