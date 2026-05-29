@@ -510,26 +510,47 @@ function fillRecipeForm(draft, rawText, sourceUrl) {
 
 async function importRecipeDraft() {
   const text = importTextInput.value.trim();
+  const sourceUrl = importUrlInput.value.trim();
 
-  if (!text) {
+  if (!text && !sourceUrl) {
     importTextInput.focus();
     return;
   }
 
   resetForm();
   importButton.disabled = true;
-  importButton.textContent = "Reecriture IA...";
+  importButton.textContent = sourceUrl && !text ? "Import Web..." : "Reecriture IA...";
+
+  if (hasSupabaseConfig && sourceUrl && !text) {
+    const { data, error } = await supabaseClient.functions.invoke("import-url", {
+      body: {
+        url: sourceUrl
+      }
+    });
+
+    if (!error && data) {
+      fillRecipeForm(data, "", sourceUrl);
+      importButton.disabled = false;
+      importButton.textContent = "Importer et reformater";
+      return;
+    }
+
+    authStatus.textContent = `Import Web indisponible: ${error?.message || "fonction non configuree"}`;
+    importButton.disabled = false;
+    importButton.textContent = "Importer et reformater";
+    return;
+  }
 
   if (hasSupabaseConfig) {
     const { data, error } = await supabaseClient.functions.invoke("rewrite-recipe", {
       body: {
         rawText: text,
-        sourceUrl: importUrlInput.value.trim()
+        sourceUrl
       }
     });
 
     if (!error && data) {
-      fillRecipeForm(data, text, importUrlInput.value.trim());
+      fillRecipeForm(data, text, sourceUrl);
       importButton.disabled = false;
       importButton.textContent = "Importer et reformater";
       return;
@@ -539,7 +560,7 @@ async function importRecipeDraft() {
   }
 
   const draft = buildImportedRecipe(text);
-  fillRecipeForm(draft, text, importUrlInput.value.trim());
+  fillRecipeForm(draft, text, sourceUrl);
   importButton.disabled = false;
   importButton.textContent = "Importer et reformater";
 }
