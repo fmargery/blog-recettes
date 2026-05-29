@@ -16,10 +16,12 @@ const recipeSchema = {
     "difficulty",
     "category",
     "status",
+    "imageUrl",
     "ingredients",
     "steps",
     "tags",
-    "notes"
+    "notes",
+    "nutrition"
   ],
   properties: {
     title: { type: "string" },
@@ -30,6 +32,7 @@ const recipeSchema = {
     difficulty: { type: "string", enum: ["Facile", "Moyen", "Avance"] },
     category: { type: "string" },
     status: { type: "string", enum: ["A tester", "Testee", "Validee", "Favorite"] },
+    imageUrl: { type: "string" },
     ingredients: {
       type: "array",
       items: { type: "string" }
@@ -42,7 +45,19 @@ const recipeSchema = {
       type: "array",
       items: { type: "string" }
     },
-    notes: { type: "string" }
+    notes: { type: "string" },
+    nutrition: {
+      type: "object",
+      additionalProperties: false,
+      required: ["protein", "carbs", "fat", "fiber", "summary"],
+      properties: {
+        protein: { type: "number" },
+        carbs: { type: "number" },
+        fat: { type: "number" },
+        fiber: { type: "number" },
+        summary: { type: "string" }
+      }
+    }
   }
 };
 
@@ -76,6 +91,8 @@ Deno.serve(async (req) => {
     });
   }
 
+  const trimmedRawText = rawText.slice(0, 6000);
+
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -83,7 +100,8 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-nano",
+      max_output_tokens: 900,
       input: [
         {
           role: "system",
@@ -93,14 +111,18 @@ Deno.serve(async (req) => {
             "Ne recopie pas mot pour mot la source: reformule avec un style simple et naturel.",
             "Garde les quantites utiles quand elles sont presentes.",
             "Si une information manque, indique 'A completer'.",
-            "Ne mentionne pas les hashtags, emojis, appels a s'abonner ou commentaires reseaux sociaux."
+            "Ne mentionne pas les hashtags, emojis, appels a s'abonner ou commentaires reseaux sociaux.",
+            "Sois concis: phrases courtes, ingredients simples, etapes directes.",
+            "Estime les valeurs nutritionnelles en grammes par portion: proteines, glucides, graisses, fibres.",
+            "Si les quantites sont incompletes, fais une estimation prudente et indique-le dans nutrition.summary.",
+            "Ne fabrique pas d'URL d'image. Mets imageUrl a une chaine vide sauf si une image explicite est fournie."
           ].join(" ")
         },
         {
           role: "user",
           content: JSON.stringify({
             sourceUrl: sourceUrl || "",
-            rawText
+            rawText: trimmedRawText
           })
         }
       ],
