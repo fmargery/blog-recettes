@@ -16,12 +16,10 @@ const recipeSchema = {
     "difficulty",
     "category",
     "status",
-    "imageUrl",
     "ingredients",
     "steps",
     "tags",
-    "notes",
-    "nutrition"
+    "notes"
   ],
   properties: {
     title: { type: "string" },
@@ -32,7 +30,6 @@ const recipeSchema = {
     difficulty: { type: "string", enum: ["Facile", "Moyen", "Avance"] },
     category: { type: "string" },
     status: { type: "string", enum: ["A tester", "Testee", "Validee", "Favorite"] },
-    imageUrl: { type: "string" },
     ingredients: {
       type: "array",
       items: { type: "string" }
@@ -45,19 +42,7 @@ const recipeSchema = {
       type: "array",
       items: { type: "string" }
     },
-    notes: { type: "string" },
-    nutrition: {
-      type: "object",
-      additionalProperties: false,
-      required: ["protein", "carbs", "fat", "fiber", "summary"],
-      properties: {
-        protein: { type: "number" },
-        carbs: { type: "number" },
-        fat: { type: "number" },
-        fiber: { type: "number" },
-        summary: { type: "string" }
-      }
-    }
+    notes: { type: "string" }
   }
 };
 
@@ -112,10 +97,7 @@ Deno.serve(async (req) => {
             "Garde les quantites utiles quand elles sont presentes.",
             "Si une information manque, indique 'A completer'.",
             "Ne mentionne pas les hashtags, emojis, appels a s'abonner ou commentaires reseaux sociaux.",
-            "Sois concis: phrases courtes, ingredients simples, etapes directes.",
-            "Estime les valeurs nutritionnelles en grammes par portion: proteines, glucides, graisses, fibres.",
-            "Si les quantites sont incompletes, fais une estimation prudente et indique-le dans nutrition.summary.",
-            "Ne fabrique pas d'URL d'image. Mets imageUrl a une chaine vide sauf si une image explicite est fournie."
+            "Sois concis: phrases courtes, ingredients simples, etapes directes."
           ].join(" ")
         },
         {

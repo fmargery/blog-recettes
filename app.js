@@ -2,23 +2,15 @@ const sampleRecipes = [
   {
     title: "Pates tomates et basilic",
     source: "",
-    imageUrl: "",
     description: "Une recette simple pour un soir de semaine, avec une sauce tomate douce et beaucoup de basilic.",
     prepTime: "10 min",
     cookTime: "15 min",
-    servings: "2 personnes",
-    difficulty: "Facile",
-    category: "Plat principal",
-    status: "A tester",
-    nutrition: {
-      protein: 16,
-      carbs: 72,
-      fat: 14,
-      fiber: 6,
-      summary: "Estimation par portion, a ajuster selon les quantites exactes."
-    },
-    ingredients: ["250 g de pates", "300 g de tomates", "1 gousse d'ail", "Basilic frais", "Huile d'olive"],
-    steps: ["Cuire les pates.", "Faire revenir l'ail dans l'huile.", "Ajouter les tomates et laisser mijoter.", "Melanger avec les pates et finir avec le basilic."],
+  servings: "2 personnes",
+  difficulty: "Facile",
+  category: "Plat principal",
+  status: "A tester",
+  ingredients: ["250 g de pates", "300 g de tomates", "1 gousse d'ail", "Basilic frais", "Huile d'olive"],
+  steps: ["Cuire les pates.", "Faire revenir l'ail dans l'huile.", "Ajouter les tomates et laisser mijoter.", "Melanger avec les pates et finir avec le basilic."],
     tags: ["rapide", "vegetarien", "italien"],
     notes: "Ajouter un peu d'eau de cuisson pour lier la sauce."
   }
@@ -33,11 +25,9 @@ const tabs = document.querySelectorAll(".tab");
 const recipesView = document.querySelector("#recipesView");
 const adminView = document.querySelector("#adminView");
 const recipeList = document.querySelector("#recipeList");
-const featuredRecipe = document.querySelector("#featuredRecipe");
 const template = document.querySelector("#recipeTemplate");
 const searchInput = document.querySelector("#searchInput");
 const ingredientInput = document.querySelector("#ingredientInput");
-const filterButtons = document.querySelectorAll(".filter-chip");
 const form = document.querySelector("#recipeForm");
 const rewriteButton = document.querySelector("#rewriteButton");
 const cancelEditButton = document.querySelector("#cancelEditButton");
@@ -53,13 +43,10 @@ const authStatus = document.querySelector("#authStatus");
 let editingId = null;
 let currentRecipes = [];
 let currentUser = null;
-let activeFilter = "";
-let draftNutrition = null;
 
 const fields = {
   title: document.querySelector("#titleInput"),
   source: document.querySelector("#sourceInput"),
-  imageUrl: document.querySelector("#imageInput"),
   prepTime: document.querySelector("#prepTimeInput"),
   cookTime: document.querySelector("#cookTimeInput"),
   servings: document.querySelector("#servingsInput"),
@@ -132,7 +119,6 @@ function fromSupabase(row) {
     id: row.id,
     title: row.title,
     source: row.source || "",
-    imageUrl: row.image_url || "",
     description: row.description || "",
     prepTime: row.prep_time || "",
     cookTime: row.cook_time || "",
@@ -144,13 +130,6 @@ function fromSupabase(row) {
     steps: row.steps || [],
     tags: row.tags || [],
     notes: row.notes || "",
-    nutrition: {
-      protein: Number(row.protein || 0),
-      carbs: Number(row.carbs || 0),
-      fat: Number(row.fat || 0),
-      fiber: Number(row.fiber || 0),
-      summary: row.nutrition_summary || ""
-    },
     raw: row.raw_text || ""
   };
 }
@@ -160,7 +139,6 @@ function toSupabase(recipe) {
     owner_id: currentUser ? currentUser.id : null,
     title: recipe.title,
     source: recipe.source,
-    image_url: recipe.imageUrl,
     description: recipe.description,
     prep_time: recipe.prepTime,
     cook_time: recipe.cookTime,
@@ -172,11 +150,6 @@ function toSupabase(recipe) {
     steps: recipe.steps,
     tags: recipe.tags,
     notes: recipe.notes,
-    protein: recipe.nutrition?.protein || null,
-    carbs: recipe.nutrition?.carbs || null,
-    fat: recipe.nutrition?.fat || null,
-    fiber: recipe.nutrition?.fiber || null,
-    nutrition_summary: recipe.nutrition?.summary || "",
     raw_text: recipe.raw || "",
     updated_at: new Date().toISOString()
   };
@@ -184,66 +157,6 @@ function toSupabase(recipe) {
 
 function canEdit() {
   return true;
-}
-
-function isVegetarian(recipe) {
-  const text = [
-    recipe.title,
-    recipe.description,
-    recipe.category || "",
-    recipe.tags.join(" "),
-    recipe.ingredients.join(" ")
-  ].join(" ").toLowerCase();
-
-  const meatWords = ["poulet", "boeuf", "porc", "veau", "agneau", "jambon", "saumon", "thon", "poisson", "crevette"];
-  const veggieWords = ["vegetarien", "vege", "legume", "lentille", "pois chiche", "tofu", "courgette", "tomate", "aubergine"];
-
-  return veggieWords.some((word) => text.includes(word)) && !meatWords.some((word) => text.includes(word));
-}
-
-function isHighProtein(recipe) {
-  return Number(recipe.nutrition?.protein || 0) >= 25
-    || recipe.tags.some((tag) => tag.toLowerCase().includes("proteine"))
-    || recipe.category?.toLowerCase().includes("sport");
-}
-
-function imageGradient(recipe) {
-  const text = `${recipe.title} ${recipe.category} ${recipe.tags.join(" ")}`.toLowerCase();
-
-  if (text.includes("dessert") || text.includes("fruit")) {
-    return "linear-gradient(135deg, rgba(201, 80, 63, 0.84), rgba(211, 155, 58, 0.72))";
-  }
-
-  if (isVegetarian(recipe) || text.includes("potager")) {
-    return "linear-gradient(135deg, rgba(95, 140, 107, 0.9), rgba(214, 197, 140, 0.75))";
-  }
-
-  if (isHighProtein(recipe) || text.includes("sport")) {
-    return "linear-gradient(135deg, rgba(38, 48, 39, 0.88), rgba(95, 140, 107, 0.75))";
-  }
-
-  return "linear-gradient(135deg, rgba(95, 140, 107, 0.86), rgba(201, 80, 63, 0.74))";
-}
-
-function decorateCard(card, recipe) {
-  const article = card.querySelector(".recipe-card");
-  const image = card.querySelector(".recipe-image");
-  const body = document.createElement("div");
-  body.className = "recipe-card__body";
-
-  Array.from(article.children).forEach((child) => {
-    if (!child.classList.contains("recipe-image")) {
-      body.append(child);
-    }
-  });
-
-  article.append(body);
-
-  if (recipe.imageUrl) {
-    image.style.backgroundImage = `url("${recipe.imageUrl}")`;
-  } else {
-    image.style.backgroundImage = imageGradient(recipe);
-  }
 }
 
 function setAdminEnabled(enabled) {
@@ -344,46 +257,26 @@ async function renderRecipes() {
       recipe.difficulty || "",
       recipe.category || "",
       recipe.status || "",
-      recipe.nutrition?.summary || "",
       recipe.tags.join(" "),
       recipe.ingredients.join(" ")
     ].join(" ").toLowerCase();
     const ingredients = recipe.ingredients.join(" ").toLowerCase();
-    const matchesQuickFilter = !activeFilter
-      || (activeFilter === "vegetarien" ? isVegetarian(recipe) : activeFilter === "protein" ? isHighProtein(recipe) : haystack.includes(activeFilter.toLowerCase()));
 
-    return haystack.includes(query) && ingredients.includes(ingredientQuery) && matchesQuickFilter;
+    return haystack.includes(query) && ingredients.includes(ingredientQuery);
   });
 
   recipeList.innerHTML = "";
-  featuredRecipe.innerHTML = "";
 
   if (recipes.length === 0) {
     recipeList.innerHTML = '<p class="description">Aucune recette ne correspond a ta recherche.</p>';
     return;
   }
 
-  const [featured, ...rest] = recipes;
-
-  renderRecipeCard(featured.recipe, featured.index, featuredRecipe);
-  rest.forEach(({ recipe, index }) => renderRecipeCard(recipe, index, recipeList));
-}
-
-function renderRecipeCard(recipe, index, target) {
+  recipes.forEach(({ recipe, index }) => {
     const card = template.content.cloneNode(true);
-    decorateCard(card, recipe);
-    card.querySelector(".card-kicker").textContent = recipe.category || "Cuisine du quotidien";
     card.querySelector("h2").textContent = recipe.title;
-    card.querySelector(".badge").textContent = isHighProtein(recipe) ? "Proteines" : isVegetarian(recipe) ? "Vege" : recipe.status || "Recette";
+    card.querySelector(".badge").textContent = recipe.tags[0] || "recette";
     card.querySelector(".description").textContent = recipe.description;
-    card.querySelector(".prep-stat").textContent = `Temps: ${recipe.prepTime || "A completer"}`;
-    card.querySelector(".cook-stat").textContent = `Cuisson: ${recipe.cookTime || "A completer"}`;
-    card.querySelector(".servings-stat").textContent = `Portions: ${recipe.servings || "A completer"}`;
-    card.querySelector(".difficulty-stat").textContent = `Difficulte: ${recipe.difficulty || "Facile"}`;
-    card.querySelector(".protein-stat").textContent = `Prot. ${recipe.nutrition?.protein || 0} g`;
-    card.querySelector(".carbs-stat").textContent = `Gluc. ${recipe.nutrition?.carbs || 0} g`;
-    card.querySelector(".fat-stat").textContent = `Gras ${recipe.nutrition?.fat || 0} g`;
-    card.querySelector(".fiber-stat").textContent = `Fibres ${recipe.nutrition?.fiber || 0} g`;
 
     const meta = card.querySelector(".meta");
     [
@@ -419,11 +312,6 @@ function renderRecipeCard(recipe, index, target) {
     notes.textContent = recipe.notes || "";
     notesTitle.classList.toggle("is-hidden", !recipe.notes);
     notes.classList.toggle("is-hidden", !recipe.notes);
-    const nutritionTitle = card.querySelector(".nutrition-title");
-    const nutritionSummary = card.querySelector(".nutrition-summary");
-    nutritionSummary.textContent = recipe.nutrition?.summary || "Estimation nutritionnelle par portion.";
-    nutritionTitle.classList.toggle("is-hidden", !recipe.nutrition?.summary);
-    nutritionSummary.classList.toggle("is-hidden", !recipe.nutrition?.summary);
 
     const editButton = card.querySelector(".edit-button");
     const deleteButton = card.querySelector(".delete-button");
@@ -432,12 +320,12 @@ function renderRecipeCard(recipe, index, target) {
     editButton.addEventListener("click", () => editRecipe(index));
     deleteButton.addEventListener("click", () => deleteRecipe(index));
 
-    target.append(card);
+    recipeList.append(card);
+  });
 }
 
 function resetForm() {
   editingId = null;
-  draftNutrition = null;
   form.reset();
   submitButton.textContent = "Publier";
   cancelEditButton.classList.add("is-hidden");
@@ -449,7 +337,6 @@ function editRecipe(index) {
 
   fields.title.value = recipe.title || "";
   fields.source.value = recipe.source || "";
-  fields.imageUrl.value = recipe.imageUrl || "";
   fields.prepTime.value = recipe.prepTime || "";
   fields.cookTime.value = recipe.cookTime || "";
   fields.servings.value = recipe.servings || "";
@@ -461,7 +348,6 @@ function editRecipe(index) {
   fields.steps.value = recipe.steps.join("\n");
   fields.tags.value = recipe.tags.join(", ");
   fields.notes.value = recipe.notes || "";
-  draftNutrition = recipe.nutrition || null;
   fields.raw.value = recipe.raw || "";
 
   submitButton.textContent = "Enregistrer";
@@ -492,7 +378,6 @@ async function deleteRecipe(index) {
 function fillRecipeForm(draft, rawText, sourceUrl) {
   fields.title.value = draft.title || "Nouvelle recette importee";
   fields.source.value = sourceUrl || "";
-  fields.imageUrl.value = draft.imageUrl || "";
   fields.description.value = draft.description || "";
   fields.ingredients.value = (draft.ingredients || []).join("\n");
   fields.steps.value = (draft.steps || []).join("\n");
@@ -504,53 +389,31 @@ function fillRecipeForm(draft, rawText, sourceUrl) {
   fields.category.value = draft.category || "A classer";
   fields.status.value = draft.status || "A tester";
   fields.notes.value = draft.notes || "";
-  draftNutrition = draft.nutrition || null;
   fields.raw.value = rawText || "";
 }
 
 async function importRecipeDraft() {
   const text = importTextInput.value.trim();
-  const sourceUrl = importUrlInput.value.trim();
 
-  if (!text && !sourceUrl) {
+  if (!text) {
     importTextInput.focus();
     return;
   }
 
   resetForm();
   importButton.disabled = true;
-  importButton.textContent = sourceUrl && !text ? "Import Web..." : "Reecriture IA...";
-
-  if (hasSupabaseConfig && sourceUrl && !text) {
-    const { data, error } = await supabaseClient.functions.invoke("import-url", {
-      body: {
-        url: sourceUrl
-      }
-    });
-
-    if (!error && data) {
-      fillRecipeForm(data, "", sourceUrl);
-      importButton.disabled = false;
-      importButton.textContent = "Importer et reformater";
-      return;
-    }
-
-    authStatus.textContent = `Import Web indisponible: ${error?.message || "fonction non configuree"}`;
-    importButton.disabled = false;
-    importButton.textContent = "Importer et reformater";
-    return;
-  }
+  importButton.textContent = "Reecriture IA...";
 
   if (hasSupabaseConfig) {
     const { data, error } = await supabaseClient.functions.invoke("rewrite-recipe", {
       body: {
         rawText: text,
-        sourceUrl
+        sourceUrl: importUrlInput.value.trim()
       }
     });
 
     if (!error && data) {
-      fillRecipeForm(data, text, sourceUrl);
+      fillRecipeForm(data, text, importUrlInput.value.trim());
       importButton.disabled = false;
       importButton.textContent = "Importer et reformater";
       return;
@@ -560,7 +423,7 @@ async function importRecipeDraft() {
   }
 
   const draft = buildImportedRecipe(text);
-  fillRecipeForm(draft, text, sourceUrl);
+  fillRecipeForm(draft, text, importUrlInput.value.trim());
   importButton.disabled = false;
   importButton.textContent = "Importer et reformater";
 }
@@ -644,14 +507,6 @@ tabs.forEach((tab) => {
 
 searchInput.addEventListener("input", renderRecipes);
 ingredientInput.addEventListener("input", renderRecipes);
-filterButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    filterButtons.forEach((item) => item.classList.remove("is-active"));
-    button.classList.add("is-active");
-    activeFilter = button.dataset.filter;
-    renderRecipes();
-  });
-});
 rewriteButton.addEventListener("click", rewriteDraft);
 cancelEditButton.addEventListener("click", resetForm);
 importButton.addEventListener("click", importRecipeDraft);
@@ -664,7 +519,6 @@ form.addEventListener("submit", async (event) => {
   const recipe = {
     title: fields.title.value.trim(),
     source: fields.source.value.trim(),
-    imageUrl: fields.imageUrl.value.trim(),
     prepTime: fields.prepTime.value.trim(),
     cookTime: fields.cookTime.value.trim(),
     servings: fields.servings.value.trim(),
@@ -676,13 +530,6 @@ form.addEventListener("submit", async (event) => {
     steps: splitLines(fields.steps.value),
     tags: fields.tags.value.split(",").map((tag) => tag.trim()).filter(Boolean),
     notes: fields.notes.value.trim(),
-    nutrition: draftNutrition || {
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      summary: "Estimation a completer."
-    },
     raw: fields.raw.value.trim()
   };
 

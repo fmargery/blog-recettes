@@ -10,10 +10,9 @@
   </head>
   <body>
     <header class="site-header">
-      <div class="brand-block">
+      <div>
         <p class="eyebrow">Carnet personnel</p>
-        <h1>Cuisine, Jardin & Famille</h1>
-        <p class="intro">Je garde ici mes recettes du quotidien: simples, equilibrees, genereuses, avec une place speciale pour le potager et les idees vege.</p>
+        <h1>Mes recettes</h1>
       </div>
       <nav class="tabs" aria-label="Navigation principale">
         <button class="tab is-active" data-view="recipes" type="button">Recettes</button>
@@ -33,16 +32,6 @@
             <input id="ingredientInput" type="search" placeholder="ex: basilic">
           </label>
         </div>
-        <div class="quick-filters" aria-label="Filtres rapides">
-          <button class="filter-chip is-active" data-filter="" type="button">Toutes</button>
-          <button class="filter-chip" data-filter="vegetarien" type="button">Vege</button>
-          <button class="filter-chip" data-filter="rapide" type="button">Rapide</button>
-          <button class="filter-chip" data-filter="protein" type="button">Proteines</button>
-          <button class="filter-chip" data-filter="sport" type="button">Sport</button>
-          <button class="filter-chip" data-filter="potager" type="button">Potager</button>
-          <button class="filter-chip" data-filter="A tester" type="button">A tester</button>
-        </div>
-        <section id="featuredRecipe" class="featured"></section>
         <div id="recipeList" class="recipe-list"></div>
       </section>
 
@@ -65,7 +54,7 @@
         <section class="import-panel">
           <div>
             <h2>Importer une recette</h2>
-            <p>Colle une URL de recette pour tenter un import Web automatique, ou colle le texte brut si le site n'est pas lisible.</p>
+            <p>Colle un lien et le texte trouve sur Instagram, YouTube, Facebook ou un site de cuisine.</p>
           </div>
           <label>
             Lien d'origine
@@ -88,10 +77,6 @@
             <label>
               Source
               <input id="sourceInput" type="url" placeholder="https://instagram.com/...">
-            </label>
-            <label>
-              Image
-              <input id="imageInput" type="url" placeholder="https://...">
             </label>
             <div class="field-grid">
               <label>
@@ -170,27 +155,11 @@
 
     <template id="recipeTemplate">
       <article class="recipe-card">
-        <div class="recipe-image"></div>
         <div class="recipe-card__header">
-          <div>
-            <p class="card-kicker"></p>
-            <h2></h2>
-          </div>
+          <h2></h2>
           <span class="badge"></span>
         </div>
         <p class="description"></p>
-        <div class="stats">
-          <span class="stat prep-stat"></span>
-          <span class="stat cook-stat"></span>
-          <span class="stat servings-stat"></span>
-          <span class="stat difficulty-stat"></span>
-        </div>
-        <div class="nutrition">
-          <span class="nutrition-item protein-stat"></span>
-          <span class="nutrition-item carbs-stat"></span>
-          <span class="nutrition-item fat-stat"></span>
-          <span class="nutrition-item fiber-stat"></span>
-        </div>
         <div class="meta"></div>
         <details>
           <summary>Voir la recette</summary>
@@ -200,8 +169,6 @@
           <ol class="steps"></ol>
           <h3 class="notes-title">Notes</h3>
           <p class="notes"></p>
-          <h3 class="nutrition-title">Nutrition</h3>
-          <p class="nutrition-summary"></p>
         </details>
         <div class="card-actions">
           <button class="secondary edit-button" type="button">Modifier</button>

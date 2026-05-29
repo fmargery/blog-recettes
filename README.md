@@ -63,16 +63,3 @@ Le site appelle une Supabase Edge Function nommee `rewrite-recipe`.
 6. Republier `index.html`, `app.js`, `styles.css` et `supabase-config.js` sur GitHub.
 
 La cle OpenAI doit rester dans Supabase. Ne jamais la mettre dans GitHub Pages, `app.js` ou `supabase-config.js`.
-
-## Activer l'import Web par URL
-
-Le site peut appeler une Supabase Edge Function nommee `import-url`.
-
-1. Creer une Edge Function `import-url`.
-2. Copier le contenu de `supabase/functions/import-url/index.ts` dans cette fonction.
-3. Verifier que le secret `OPENAI_API_KEY` existe deja dans Supabase.
-4. Desactiver la verification JWT si l'admin temporaire sans connexion est utilise.
-5. Deployer la fonction.
-
-L'import Web fonctionne mieux avec les sites de recettes qui exposent des donnees structurees `schema.org/Recipe`.
-Pour YouTube, Instagram et Facebook, il restera souvent preferable de coller la description ou le texte de la publication.
